@@ -167,6 +167,8 @@ const CFG={
   bedHeight:      470,    // v2: ВЫСОТА грядки внешняя, мм (высокая секция)
   soilDepth:      450,    // v2: высота засыпки грунта, мм
   weightModule900: 15.7,  // v2: вес модуля 900 мм (1 секция + 2 распорки), кг
+  // «Состав для склада» (лид Bitrix24, см. ../cart-bom/README.md): позиция 1С, к ней дописывается цвет.
+  bomName900:     'Модуль 900 мм, высокий (1 секция + 2 распорки)',
   configAnchor:   '#configuration',  // якорь блока с конфигурациями ниже на странице Tilda
   videoAnchor:    '#video-instruction', // якорь блока ВИДЕО-инструкции на странице Tilda (внутренний скролл через мост astra:scrollTo)
   videoEnabled:   true,              // видео-иконка показана; клик → скролл к videoAnchor на странице (не внешняя ссылка).
@@ -220,6 +222,9 @@ function order(){
   if(color==='beige') breakText+='; бежевый +15%';
   return {sp,u,price,breakText};
 }
+// Состав для склада: позиции 1С на ОДНУ грядку (qty — шт, unit — цена за шт). Покупателю не показывается.
+function bom(){const o=order(),c=colorName().toLowerCase();
+  return [{name:CFG.bomName900+', '+c, qty:o.sp.n900, unit:o.u.u900}];}
 function cartImgUrl(){return imgUrl(color,N);}
 function update(){
   const cur=front?imgs[0]:imgs[1], nxt=front?imgs[1]:imgs[0];
@@ -248,10 +253,13 @@ function cartProduct(){
   const size=sp.lenExt+'×'+sp.widExt+'×'+CFG.bedHeight+' мм';
   const name='Грядка АСТРА — '+colorName()+', '+size;
   return {
-    uid:'astra-'+color+'-'+N, id:'astra-'+color+'-'+N, name:name,
+    // uid 'astra2-' (не 'astra-' как у v1): иначе Tilda сливает низкую и высокую грядку одного цвета/размера
+    // в одну строку корзины с ценой 0 (ветка «тот же uid, другое имя/цена» в tcart__addProduct).
+    uid:'astra2-'+color+'-'+N, id:'astra2-'+color+'-'+N, name:name,
     price:o.price, quantity:1, img:cartImgUrl(), url:CFG.productUrl||location.href,
     option:[{option:'Цвет',variant:colorName()},{option:'Размер',variant:size},{option:'Состав',variant:o.breakText}],
-    descr:o.breakText
+    descr:o.breakText,
+    astra_bom:bom()   // → скрипт в футере Tilda → скрытое поле корзины → лид Bitrix24 «Состав для склада»
   };
 }
 function addToCart(){
